@@ -18,7 +18,6 @@ function App() {
   const [identityPreview, setIdentityPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleInputChange = (e) => {
@@ -86,7 +85,7 @@ function App() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -94,52 +93,47 @@ function App() {
       return;
     }
 
-    setIsSubmitting(true);
-    setSubmitStatus(null);
+    const subject = encodeURIComponent(`Kreditantrag FinanzPlus Austria — ${formData.prenom} ${formData.nom}`);
 
-    try {
-      const data = new FormData();
-      data.append('nom', formData.nom);
-      data.append('prenom', formData.prenom);
-      data.append('age', formData.age);
-      data.append('sexe', formData.sexe);
-      data.append('adresse', formData.adresse);
-      data.append('telephone', formData.telephone);
-      data.append('travail', formData.travail);
-      data.append('salaireMensuel', formData.salaireMensuel);
-      data.append('accepteConfidentialite', formData.accepteConfidentialite);
-      data.append('identityDocument', identityFile);
+    const body = encodeURIComponent(
+`KREDITANTRAG — FINANZPLUS AUSTRIA
+=====================================
 
-      const response = await fetch('http://localhost:5000/api/submit-application', {
-        method: 'POST',
-        body: data
-      });
+PERSÖNLICHE INFORMATIONEN
+--------------------------
+Nachname:             ${formData.nom}
+Vorname:              ${formData.prenom}
+Alter:                ${formData.age} Jahre
+Geschlecht:           ${formData.sexe}
+Adresse:              ${formData.adresse}
 
-      const result = await response.json();
+KONTAKTDATEN
+------------
+Telefonnummer:        ${formData.telephone}
 
-      if (result.success) {
-        setSubmitStatus({
-          type: 'success',
-          message: 'Ihr Antrag wurde erfolgreich übermittelt! Wir werden Sie in Kürze kontaktieren.'
-        });
-        setFormData({
-          nom: '', prenom: '', age: '', sexe: '', adresse: '',
-          telephone: '', travail: '', salaireMensuel: '', accepteConfidentialite: false
-        });
-        setIdentityFile(null);
-        setIdentityPreview(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      } else {
-        setSubmitStatus({ type: 'error', message: result.message || 'Ein Fehler ist aufgetreten.' });
-      }
-    } catch (err) {
-      setSubmitStatus({
-        type: 'error',
-        message: 'Der Server ist nicht erreichbar. Bitte stellen Sie sicher, dass das Backend gestartet ist.'
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+BERUFLICHE INFORMATIONEN
+------------------------
+Beruf:                ${formData.travail}
+Monatliches Gehalt:   ${formData.salaireMensuel} €
+
+AUSWEISDOKUMENT
+---------------
+⚠️ Bitte fügen Sie Ihr Ausweisdokument (${identityFile ? identityFile.name : 'Datei'}) als Anhang hinzu, bevor Sie senden.
+
+VERTRAULICHKEIT
+---------------
+✓ Der Antragsteller hat die Vertraulichkeitsvereinbarung gelesen und akzeptiert.
+
+=====================================
+Einreichungsdatum: ${new Date().toLocaleString('de-DE')}`
+    );
+
+    window.location.href = `mailto:kontakt_finanzplusaustria@proton.me?subject=${subject}&body=${body}`;
+
+    setSubmitStatus({
+      type: 'success',
+      message: 'Ihr E-Mail-Programm wurde geöffnet. Bitte vergessen Sie nicht, Ihr Ausweisdokument als Anhang hinzuzufügen, bevor Sie senden!'
+    });
   };
 
   return (
@@ -326,8 +320,8 @@ function App() {
           {/* ABSCHNITT 6: ABSENDEN */}
           <section className="form-section submit-section">
             <button type="submit" className="submit-button"
-              disabled={!formData.accepteConfidentialite || isSubmitting}>
-              {isSubmitting ? 'Wird gesendet...' : 'Antrag einreichen'}
+              disabled={!formData.accepteConfidentialite}>
+              Antrag einreichen
             </button>
             <p className="submit-note">* Pflichtfelder</p>
           </section>
