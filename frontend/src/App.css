@@ -88,6 +88,13 @@ body {
   margin-bottom: 0;
 }
 
+/* Recto / Verso côte à côte */
+.id-card-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
 /* Form Groups */
 .form-group {
   margin-bottom: 22px;

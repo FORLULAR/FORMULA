@@ -14,11 +14,14 @@ function App() {
     accepteConfidentialite: false
   });
 
-  const [identityFile, setIdentityFile] = useState(null);
-  const [identityPreview, setIdentityPreview] = useState(null);
+  const [rectoFile, setRectoFile] = useState(null);
+  const [rectoPreview, setRectoPreview] = useState(null);
+  const [versoFile, setVersoFile] = useState(null);
+  const [versoPreview, setVersoPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState(null);
-  const fileInputRef = useRef(null);
+  const rectoRef = useRef(null);
+  const versoRef = useRef(null);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -31,30 +34,45 @@ function App() {
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  const validateFile = (file, errorKey) => {
     const allowed = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
     if (!allowed.includes(file.type)) {
-      setErrors(prev => ({ ...prev, identityFile: 'Nicht erlaubtes Format. Bitte JPG, PNG oder PDF verwenden.' }));
-      return;
+      setErrors(prev => ({ ...prev, [errorKey]: 'Nicht erlaubtes Format. Bitte JPG, PNG oder PDF verwenden.' }));
+      return false;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, identityFile: 'Datei zu groß (max. 10 MB).' }));
-      return;
+      setErrors(prev => ({ ...prev, [errorKey]: 'Datei zu groß (max. 10 MB).' }));
+      return false;
     }
+    return true;
+  };
 
-    setIdentityFile(file);
-    setErrors(prev => ({ ...prev, identityFile: '' }));
-
+  const getPreview = (file, setPreview) => {
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
-      reader.onloadend = () => setIdentityPreview(reader.result);
+      reader.onloadend = () => setPreview(reader.result);
       reader.readAsDataURL(file);
     } else {
-      setIdentityPreview('pdf');
+      setPreview('pdf');
     }
+  };
+
+  const handleRectoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!validateFile(file, 'rectoFile')) return;
+    setRectoFile(file);
+    setErrors(prev => ({ ...prev, rectoFile: '' }));
+    getPreview(file, setRectoPreview);
+  };
+
+  const handleVersoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!validateFile(file, 'versoFile')) return;
+    setVersoFile(file);
+    setErrors(prev => ({ ...prev, versoFile: '' }));
+    getPreview(file, setVersoPreview);
   };
 
   const validateForm = () => {
@@ -76,7 +94,8 @@ function App() {
     if (!formData.salaireMensuel || Number(formData.salaireMensuel) <= 0) {
       newErrors.salaireMensuel = 'Das monatliche Gehalt muss größer als 0 sein.';
     }
-    if (!identityFile) newErrors.identityFile = 'Bitte laden Sie Ihren Lichtbildausweis hoch.';
+    if (!rectoFile) newErrors.rectoFile = 'Bitte laden Sie die Vorderseite Ihres Ausweises hoch.';
+    if (!versoFile) newErrors.versoFile = 'Bitte laden Sie die Rückseite Ihres Ausweises hoch.';
     if (!formData.accepteConfidentialite) {
       newErrors.accepteConfidentialite = 'Sie müssen die Vertraulichkeitsklausel akzeptieren.';
     }
@@ -118,7 +137,9 @@ Monatliches Gehalt:   ${formData.salaireMensuel} €
 
 AUSWEISDOKUMENT
 ---------------
-⚠️ Bitte fügen Sie Ihr Ausweisdokument (${identityFile ? identityFile.name : 'Datei'}) als Anhang hinzu, bevor Sie senden.
+⚠️ Bitte fügen Sie beide Seiten Ihres Ausweises als Anhang hinzu, bevor Sie senden:
+   • Vorderseite (Recto): ${rectoFile ? rectoFile.name : '-'}
+   • Rückseite (Verso):   ${versoFile ? versoFile.name : '-'}
 
 VERTRAULICHKEIT
 ---------------
@@ -237,37 +258,71 @@ Einreichungsdatum: ${new Date().toLocaleString('de-DE')}`
           <section className="form-section">
             <h2 className="section-title">🪪 Ausweisdokument</h2>
             <p className="section-desc">
-              Laden Sie Ihren Personalausweis, Reisepass oder ein anderes offizielles Identitätsdokument hoch.
+              Laden Sie Ihren Personalausweis oder Reisepass hoch — <strong>Vorderseite (Recto)</strong> und <strong>Rückseite (Verso)</strong> sind erforderlich.
             </p>
 
-            <div className="form-group">
-              <label htmlFor="identityDocument">Identitätsnachweis * <span className="file-hint">(JPG, PNG oder PDF — max. 10 MB)</span></label>
-              <div className={`file-drop-zone${identityFile ? ' has-file' : ''}${errors.identityFile ? ' error-border' : ''}`}
-                onClick={() => fileInputRef.current && fileInputRef.current.click()}>
-                {!identityFile ? (
-                  <>
-                    <div className="file-drop-icon">📎</div>
-                    <p className="file-drop-text">Klicken Sie hier, um Ihre Datei auszuwählen</p>
-                    <p className="file-drop-sub">JPG · PNG · PDF</p>
-                  </>
-                ) : (
-                  <div className="file-selected">
-                    {identityPreview && identityPreview !== 'pdf' ? (
-                      <img src={identityPreview} alt="Vorschau Ausweisdokument" className="id-preview-img" />
-                    ) : (
-                      <div className="pdf-preview">📄 {identityFile.name}</div>
-                    )}
-                    <p className="file-name-label">{identityFile.name}</p>
-                    <button type="button" className="remove-file-btn"
-                      onClick={(e) => { e.stopPropagation(); setIdentityFile(null); setIdentityPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
-                      ✕ Entfernen
-                    </button>
-                  </div>
-                )}
+            <div className="id-card-row">
+              {/* RECTO */}
+              <div className="form-group">
+                <label>Vorderseite (Recto) * <span className="file-hint">(JPG, PNG oder PDF — max. 10 MB)</span></label>
+                <div className={`file-drop-zone${rectoFile ? ' has-file' : ''}${errors.rectoFile ? ' error-border' : ''}`}
+                  onClick={() => rectoRef.current && rectoRef.current.click()}>
+                  {!rectoFile ? (
+                    <>
+                      <div className="file-drop-icon">🪪</div>
+                      <p className="file-drop-text">Vorderseite hochladen</p>
+                      <p className="file-drop-sub">JPG · PNG · PDF</p>
+                    </>
+                  ) : (
+                    <div className="file-selected">
+                      {rectoPreview && rectoPreview !== 'pdf' ? (
+                        <img src={rectoPreview} alt="Vorschau Vorderseite" className="id-preview-img" />
+                      ) : (
+                        <div className="pdf-preview">📄 {rectoFile.name}</div>
+                      )}
+                      <p className="file-name-label">{rectoFile.name}</p>
+                      <button type="button" className="remove-file-btn"
+                        onClick={(e) => { e.stopPropagation(); setRectoFile(null); setRectoPreview(null); if (rectoRef.current) rectoRef.current.value = ''; }}>
+                        ✕ Entfernen
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <input ref={rectoRef} type="file" accept=".jpg,.jpeg,.png,.pdf"
+                  onChange={handleRectoChange} style={{ display: 'none' }} />
+                {errors.rectoFile && <span className="error-message">{errors.rectoFile}</span>}
               </div>
-              <input ref={fileInputRef} type="file" id="identityDocument" name="identityDocument"
-                accept=".jpg,.jpeg,.png,.pdf" onChange={handleFileChange} style={{ display: 'none' }} />
-              {errors.identityFile && <span className="error-message">{errors.identityFile}</span>}
+
+              {/* VERSO */}
+              <div className="form-group">
+                <label>Rückseite (Verso) * <span className="file-hint">(JPG, PNG oder PDF — max. 10 MB)</span></label>
+                <div className={`file-drop-zone${versoFile ? ' has-file' : ''}${errors.versoFile ? ' error-border' : ''}`}
+                  onClick={() => versoRef.current && versoRef.current.click()}>
+                  {!versoFile ? (
+                    <>
+                      <div className="file-drop-icon">🪪</div>
+                      <p className="file-drop-text">Rückseite hochladen</p>
+                      <p className="file-drop-sub">JPG · PNG · PDF</p>
+                    </>
+                  ) : (
+                    <div className="file-selected">
+                      {versoPreview && versoPreview !== 'pdf' ? (
+                        <img src={versoPreview} alt="Vorschau Rückseite" className="id-preview-img" />
+                      ) : (
+                        <div className="pdf-preview">📄 {versoFile.name}</div>
+                      )}
+                      <p className="file-name-label">{versoFile.name}</p>
+                      <button type="button" className="remove-file-btn"
+                        onClick={(e) => { e.stopPropagation(); setVersoFile(null); setVersoPreview(null); if (versoRef.current) versoRef.current.value = ''; }}>
+                        ✕ Entfernen
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <input ref={versoRef} type="file" accept=".jpg,.jpeg,.png,.pdf"
+                  onChange={handleVersoChange} style={{ display: 'none' }} />
+                {errors.versoFile && <span className="error-message">{errors.versoFile}</span>}
+              </div>
             </div>
           </section>
 
