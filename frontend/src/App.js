@@ -38,11 +38,11 @@ function App() {
 
     const allowed = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
     if (!allowed.includes(file.type)) {
-      setErrors(prev => ({ ...prev, identityFile: 'Format non autorisé. Utilisez JPG, PNG ou PDF.' }));
+      setErrors(prev => ({ ...prev, identityFile: 'Nicht erlaubtes Format. Bitte JPG, PNG oder PDF verwenden.' }));
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, identityFile: 'Fichier trop volumineux (max 10 Mo).' }));
+      setErrors(prev => ({ ...prev, identityFile: 'Datei zu groß (max. 10 MB).' }));
       return;
     }
 
@@ -61,25 +61,25 @@ function App() {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.nom.trim()) newErrors.nom = 'Le nom de famille est requis.';
-    if (!formData.prenom.trim()) newErrors.prenom = 'Le prénom est requis.';
+    if (!formData.nom.trim()) newErrors.nom = 'Nachname ist erforderlich.';
+    if (!formData.prenom.trim()) newErrors.prenom = 'Vorname ist erforderlich.';
     if (!formData.age || formData.age < 18 || formData.age > 100) {
-      newErrors.age = "L'âge doit être compris entre 18 et 100 ans.";
+      newErrors.age = 'Das Alter muss zwischen 18 und 100 Jahren liegen.';
     }
-    if (!formData.sexe) newErrors.sexe = 'Veuillez sélectionner votre sexe.';
-    if (!formData.adresse.trim()) newErrors.adresse = "L'adresse est requise.";
+    if (!formData.sexe) newErrors.sexe = 'Bitte wählen Sie Ihr Geschlecht aus.';
+    if (!formData.adresse.trim()) newErrors.adresse = 'Adresse ist erforderlich.';
     if (!formData.telephone.trim()) {
-      newErrors.telephone = 'Le numéro de téléphone est requis.';
+      newErrors.telephone = 'Telefonnummer ist erforderlich.';
     } else if (!/^\+?[\d\s\-()]{6,20}$/.test(formData.telephone)) {
-      newErrors.telephone = 'Format de numéro invalide.';
+      newErrors.telephone = 'Ungültiges Telefonnummernformat.';
     }
-    if (!formData.travail.trim()) newErrors.travail = 'Le travail est requis.';
+    if (!formData.travail.trim()) newErrors.travail = 'Beruf ist erforderlich.';
     if (!formData.salaireMensuel || Number(formData.salaireMensuel) <= 0) {
-      newErrors.salaireMensuel = 'Le salaire mensuel doit être supérieur à 0.';
+      newErrors.salaireMensuel = 'Das monatliche Gehalt muss größer als 0 sein.';
     }
-    if (!identityFile) newErrors.identityFile = 'Veuillez importer votre pièce d\'identité.';
+    if (!identityFile) newErrors.identityFile = 'Bitte laden Sie Ihren Lichtbildausweis hoch.';
     if (!formData.accepteConfidentialite) {
-      newErrors.accepteConfidentialite = 'Vous devez accepter la clause de confidentialité.';
+      newErrors.accepteConfidentialite = 'Sie müssen die Vertraulichkeitsklausel akzeptieren.';
     }
 
     setErrors(newErrors);
@@ -90,7 +90,7 @@ function App() {
     e.preventDefault();
 
     if (!validateForm()) {
-      setSubmitStatus({ type: 'error', message: 'Veuillez corriger les erreurs dans le formulaire.' });
+      setSubmitStatus({ type: 'error', message: 'Bitte korrigieren Sie die Fehler im Formular.' });
       return;
     }
 
@@ -120,9 +120,8 @@ function App() {
       if (result.success) {
         setSubmitStatus({
           type: 'success',
-          message: 'Votre demande a été envoyée avec succès ! Nous vous contacterons très prochainement.'
+          message: 'Ihr Antrag wurde erfolgreich übermittelt! Wir werden Sie in Kürze kontaktieren.'
         });
-        // Réinitialiser le formulaire
         setFormData({
           nom: '', prenom: '', age: '', sexe: '', adresse: '',
           telephone: '', travail: '', salaireMensuel: '', accepteConfidentialite: false
@@ -131,12 +130,12 @@ function App() {
         setIdentityPreview(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
-        setSubmitStatus({ type: 'error', message: result.message || 'Une erreur est survenue.' });
+        setSubmitStatus({ type: 'error', message: result.message || 'Ein Fehler ist aufgetreten.' });
       }
     } catch (err) {
       setSubmitStatus({
         type: 'error',
-        message: 'Impossible de contacter le serveur. Vérifiez que le backend est démarré.'
+        message: 'Der Server ist nicht erreichbar. Bitte stellen Sie sicher, dass das Backend gestartet ist.'
       });
     } finally {
       setIsSubmitting(false);
@@ -148,69 +147,69 @@ function App() {
       <div className="container">
         <header className="header">
           <h1>FinanzPlus Austria</h1>
-          <p className="subtitle">Formulaire de demande — Kreditwürdigkeitsformular</p>
+          <p className="subtitle">Kreditwürdigkeitsformular</p>
         </header>
 
         <form onSubmit={handleSubmit} className="form">
 
-          {/* SECTION 1 : INFORMATIONS PERSONNELLES */}
+          {/* ABSCHNITT 1: PERSÖNLICHE INFORMATIONEN */}
           <section className="form-section">
-            <h2 className="section-title">📋 Informations personnelles</h2>
+            <h2 className="section-title">📋 Persönliche Informationen</h2>
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="nom">Nom de famille *</label>
+                <label htmlFor="nom">Nachname *</label>
                 <input type="text" id="nom" name="nom" value={formData.nom}
                   onChange={handleInputChange} className={errors.nom ? 'error' : ''}
-                  placeholder="Votre nom de famille" />
+                  placeholder="Ihr Nachname" />
                 {errors.nom && <span className="error-message">{errors.nom}</span>}
               </div>
 
               <div className="form-group">
-                <label htmlFor="prenom">Prénom *</label>
+                <label htmlFor="prenom">Vorname *</label>
                 <input type="text" id="prenom" name="prenom" value={formData.prenom}
                   onChange={handleInputChange} className={errors.prenom ? 'error' : ''}
-                  placeholder="Votre prénom" />
+                  placeholder="Ihr Vorname" />
                 {errors.prenom && <span className="error-message">{errors.prenom}</span>}
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="age">Âge *</label>
+                <label htmlFor="age">Alter *</label>
                 <input type="number" id="age" name="age" value={formData.age}
                   onChange={handleInputChange} className={errors.age ? 'error' : ''}
-                  placeholder="Votre âge" min="18" max="100" />
+                  placeholder="Ihr Alter" min="18" max="100" />
                 {errors.age && <span className="error-message">{errors.age}</span>}
               </div>
 
               <div className="form-group">
-                <label htmlFor="sexe">Sexe *</label>
+                <label htmlFor="sexe">Geschlecht *</label>
                 <select id="sexe" name="sexe" value={formData.sexe}
                   onChange={handleInputChange} className={`select-input${errors.sexe ? ' error' : ''}`}>
-                  <option value="">-- Sélectionnez --</option>
-                  <option value="Homme">Homme</option>
-                  <option value="Femme">Femme</option>
-                  <option value="Autre">Autre</option>
+                  <option value="">-- Bitte wählen --</option>
+                  <option value="Männlich">Männlich</option>
+                  <option value="Weiblich">Weiblich</option>
+                  <option value="Divers">Divers</option>
                 </select>
                 {errors.sexe && <span className="error-message">{errors.sexe}</span>}
               </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="adresse">Adresse complète *</label>
+              <label htmlFor="adresse">Vollständige Adresse *</label>
               <textarea id="adresse" name="adresse" value={formData.adresse}
                 onChange={handleInputChange} className={errors.adresse ? 'error' : ''}
-                placeholder="Rue, numéro, code postal, ville, pays" rows="3" />
+                placeholder="Straße, Hausnummer, Postleitzahl, Stadt, Land" rows="3" />
               {errors.adresse && <span className="error-message">{errors.adresse}</span>}
             </div>
           </section>
 
-          {/* SECTION 2 : CONTACT */}
+          {/* ABSCHNITT 2: KONTAKTDATEN */}
           <section className="form-section">
-            <h2 className="section-title">📞 Coordonnées</h2>
+            <h2 className="section-title">📞 Kontaktdaten</h2>
             <div className="form-group">
-              <label htmlFor="telephone">Numéro de téléphone *</label>
+              <label htmlFor="telephone">Telefonnummer *</label>
               <input type="tel" id="telephone" name="telephone" value={formData.telephone}
                 onChange={handleInputChange} className={errors.telephone ? 'error' : ''}
                 placeholder="+43 XXX XXX XXXX" />
@@ -218,56 +217,56 @@ function App() {
             </div>
           </section>
 
-          {/* SECTION 3 : INFORMATIONS PROFESSIONNELLES */}
+          {/* ABSCHNITT 3: BERUFLICHE INFORMATIONEN */}
           <section className="form-section">
-            <h2 className="section-title">💼 Informations professionnelles</h2>
+            <h2 className="section-title">💼 Berufliche Informationen</h2>
 
             <div className="form-group">
-              <label htmlFor="travail">Profession / Travail *</label>
+              <label htmlFor="travail">Beruf *</label>
               <input type="text" id="travail" name="travail" value={formData.travail}
                 onChange={handleInputChange} className={errors.travail ? 'error' : ''}
-                placeholder="Votre profession" />
+                placeholder="Ihr Beruf" />
               {errors.travail && <span className="error-message">{errors.travail}</span>}
             </div>
 
             <div className="form-group">
-              <label htmlFor="salaireMensuel">Salaire mensuel (€) *</label>
+              <label htmlFor="salaireMensuel">Monatliches Gehalt (€) *</label>
               <input type="number" id="salaireMensuel" name="salaireMensuel"
                 value={formData.salaireMensuel} onChange={handleInputChange}
                 className={errors.salaireMensuel ? 'error' : ''}
-                placeholder="Votre salaire mensuel en euros" min="0" step="0.01" />
+                placeholder="Ihr monatliches Gehalt in Euro" min="0" step="0.01" />
               {errors.salaireMensuel && <span className="error-message">{errors.salaireMensuel}</span>}
             </div>
           </section>
 
-          {/* SECTION 4 : PIÈCE D'IDENTITÉ */}
+          {/* ABSCHNITT 4: AUSWEISDOKUMENT */}
           <section className="form-section">
-            <h2 className="section-title">🪪 Pièce d'identité</h2>
+            <h2 className="section-title">🪪 Ausweisdokument</h2>
             <p className="section-desc">
-              Importez votre carte d'identité, passeport ou tout document officiel prouvant votre identité.
+              Laden Sie Ihren Personalausweis, Reisepass oder ein anderes offizielles Identitätsdokument hoch.
             </p>
 
             <div className="form-group">
-              <label htmlFor="identityDocument">Document d'identité * <span className="file-hint">(JPG, PNG ou PDF — max 10 Mo)</span></label>
+              <label htmlFor="identityDocument">Identitätsnachweis * <span className="file-hint">(JPG, PNG oder PDF — max. 10 MB)</span></label>
               <div className={`file-drop-zone${identityFile ? ' has-file' : ''}${errors.identityFile ? ' error-border' : ''}`}
                 onClick={() => fileInputRef.current && fileInputRef.current.click()}>
                 {!identityFile ? (
                   <>
                     <div className="file-drop-icon">📎</div>
-                    <p className="file-drop-text">Cliquez pour sélectionner votre fichier</p>
+                    <p className="file-drop-text">Klicken Sie hier, um Ihre Datei auszuwählen</p>
                     <p className="file-drop-sub">JPG · PNG · PDF</p>
                   </>
                 ) : (
                   <div className="file-selected">
                     {identityPreview && identityPreview !== 'pdf' ? (
-                      <img src={identityPreview} alt="Aperçu pièce d'identité" className="id-preview-img" />
+                      <img src={identityPreview} alt="Vorschau Ausweisdokument" className="id-preview-img" />
                     ) : (
                       <div className="pdf-preview">📄 {identityFile.name}</div>
                     )}
                     <p className="file-name-label">{identityFile.name}</p>
                     <button type="button" className="remove-file-btn"
                       onClick={(e) => { e.stopPropagation(); setIdentityFile(null); setIdentityPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
-                      ✕ Supprimer
+                      ✕ Entfernen
                     </button>
                   </div>
                 )}
@@ -278,30 +277,31 @@ function App() {
             </div>
           </section>
 
-          {/* SECTION 5 : CLAUSE DE CONFIDENTIALITÉ */}
+          {/* ABSCHNITT 5: VERTRAULICHKEITSKLAUSEL */}
           <section className="form-section confidentiality-section">
-            <h2 className="section-title">🔒 Clause de confidentialité</h2>
+            <h2 className="section-title">🔒 Vertraulichkeitsklausel</h2>
             <div className="confidentiality-box">
-              <h3>Accord de confidentialité — FinanzPlus Austria &amp; le Demandeur</h3>
+              <h3>Vertraulichkeitsvereinbarung — FinanzPlus Austria &amp; Antragsteller</h3>
               <p>
-                Les informations personnelles collectées dans ce formulaire (nom, prénom, âge, sexe, adresse,
-                numéro de téléphone, profession, salaire mensuel et pièce d'identité) sont destinées
-                <strong> exclusivement à FinanzPlus Austria</strong> dans le cadre de l'évaluation de votre
-                demande de crédit.
+                Die in diesem Formular erhobenen persönlichen Daten (Nachname, Vorname, Alter, Geschlecht,
+                Adresse, Telefonnummer, Beruf, monatliches Gehalt und Ausweisdokument) sind
+                <strong> ausschließlich für FinanzPlus Austria</strong> im Rahmen der Bewertung Ihres
+                Kreditantrags bestimmt.
               </p>
               <p>
-                FinanzPlus Austria s'engage à :
+                FinanzPlus Austria verpflichtet sich:
               </p>
               <ul>
-                <li>Ne jamais divulguer vos données personnelles à des tiers non autorisés.</li>
-                <li>Utiliser vos informations uniquement dans le cadre de votre dossier de crédit.</li>
-                <li>Protéger et sécuriser l'ensemble de vos documents transmis.</li>
-                <li>Respecter les lois en vigueur sur la protection des données personnelles (RGPD).</li>
-                <li>Détruire vos données sur simple demande de votre part, dès que le dossier est clôturé.</li>
+                <li>Ihre persönlichen Daten niemals an unbefugte Dritte weiterzugeben.</li>
+                <li>Ihre Informationen ausschließlich im Rahmen Ihrer Kreditakte zu verwenden.</li>
+                <li>Alle übermittelten Dokumente zu schützen und zu sichern.</li>
+                <li>Die geltenden Datenschutzgesetze (DSGVO) einzuhalten.</li>
+                <li>Ihre Daten auf einfache Anfrage zu löschen, sobald der Vorgang abgeschlossen ist.</li>
               </ul>
               <p>
-                En cochant la case ci-dessous, vous confirmez avoir lu, compris et accepté l'intégralité de
-                cet accord de confidentialité entre vous et FinanzPlus Austria.
+                Durch das Ankreuzen des Kästchens unten bestätigen Sie, dass Sie die gesamte
+                Vertraulichkeitsvereinbarung zwischen Ihnen und FinanzPlus Austria gelesen,
+                verstanden und akzeptiert haben.
               </p>
             </div>
 
@@ -310,32 +310,32 @@ function App() {
                 <input type="checkbox" name="accepteConfidentialite"
                   checked={formData.accepteConfidentialite} onChange={handleInputChange}
                   className={errors.accepteConfidentialite ? 'error' : ''} />
-                <span>J'ai lu et j'accepte la clause de confidentialité entre moi et FinanzPlus Austria. *</span>
+                <span>Ich habe die Vertraulichkeitsklausel zwischen mir und FinanzPlus Austria gelesen und akzeptiere sie. *</span>
               </label>
               {errors.accepteConfidentialite && <span className="error-message">{errors.accepteConfidentialite}</span>}
             </div>
           </section>
 
-          {/* Message de statut */}
+          {/* Statusmeldung */}
           {submitStatus && (
             <div className={`status-message ${submitStatus.type}`}>
               {submitStatus.message}
             </div>
           )}
 
-          {/* SECTION 6 : ENVOI */}
+          {/* ABSCHNITT 6: ABSENDEN */}
           <section className="form-section submit-section">
             <button type="submit" className="submit-button"
               disabled={!formData.accepteConfidentialite || isSubmitting}>
-              {isSubmitting ? 'Envoi en cours...' : 'Envoyer ma demande'}
+              {isSubmitting ? 'Wird gesendet...' : 'Antrag einreichen'}
             </button>
-            <p className="submit-note">* Champs obligatoires</p>
+            <p className="submit-note">* Pflichtfelder</p>
           </section>
 
         </form>
 
         <footer className="footer">
-          <p>© 2026 FinanzPlus Austria — Tous droits réservés</p>
+          <p>© 2026 FinanzPlus Austria — Alle Rechte vorbehalten</p>
         </footer>
       </div>
     </div>
